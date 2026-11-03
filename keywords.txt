@@ -1,0 +1,66 @@
+#######################################
+# Syntax Coloring Map For RosDuino
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+rosduino	KEYWORD1
+Node	KEYWORD1
+Publisher	KEYWORD1
+Subscriber	KEYWORD1
+ServiceServer	KEYWORD1
+ServiceClient	KEYWORD1
+QoS	KEYWORD1
+Timer	KEYWORD1
+Result	KEYWORD1
+SpinResult	KEYWORD1
+Sequence	KEYWORD1
+ros	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+attach	KEYWORD2
+spinOnce	KEYWORD2
+update	KEYWORD2
+connected	KEYWORD2
+advertise	KEYWORD2
+subscribe	KEYWORD2
+advertiseService	KEYWORD2
+serviceClient	KEYWORD2
+service	KEYWORD2
+publish	KEYWORD2
+call	KEYWORD2
+callBlocking	KEYWORD2
+destroy	KEYWORD2
+now	KEYWORD2
+check	KEYWORD2
+logDebug	KEYWORD2
+logInfo	KEYWORD2
+logWarn	KEYWORD2
+logError	KEYWORD2
+logFatal	KEYWORD2
+onConnect	KEYWORD2
+onDisconnect	KEYWORD2
+defaults	KEYWORD2
+sensorData	KEYWORD2
+reliable	KEYWORD2
+bestEffort	KEYWORD2
+transientLocal	KEYWORD2
+depth	KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
+ROSDUINO_PROFILE_LITE	LITERAL1
+ROSDUINO_PROFILE_SMALL	LITERAL1
+ROSDUINO_PROFILE_MEDIUM	LITERAL1
+ROSDUINO_PROFILE_LARGE	LITERAL1
+ROSDUINO_NO_GLOBAL	LITERAL1
+ROSDUINO_NO_TIME	LITERAL1
+ROSDUINO_NO_LOG	LITERAL1
