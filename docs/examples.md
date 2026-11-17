@@ -28,7 +28,7 @@ Run the "On the computer" commands in a second terminal with the same ROS 2 envi
 **Docker** (macOS, and any host without ROS 2): `rosduino_agent` runs in a container. Native ROS 2 on macOS is not supported.
 Stop the agent before the next upload. It holds the port.
 
-Until the agent connects, `ros.connected()` is `false` and `ros.publish()` sends nothing (`rosduino::Result::NotConnected`).
+Until the agent connects, `ros.connected()` is `false` and `ros.publish()` sends nothing (`rosduino::Result::NotConnected`). `ros.advertise("topic", msg)` only registers the publisher. `msg` is not sent; its type becomes the topic type. Call it for a button: otherwise the topic appears only together with the first message, and that message is dropped. A sensor on a timer can skip `advertise`. The first `publish` creates the topic, and the readings after it are sent.
 
 ---
 
@@ -108,6 +108,89 @@ What matters here:
   Two intervals need two timers.
 - The variable sets the topic type: `std_msgs::Int32` means `std_msgs/msg/Int32`.
 - The first `ros.publish("light", ...)` registers the topic. Messages are not sent until that registration is confirmed.
+- `ros.advertise` is optional for a sensor. The board keeps publishing, so a missed first reading is followed by the next one.
+
+### Simple/ButtonSimple — a button on D28, published as a sensor
+
+Twenty times a second the board reads pin `D28` and sends that value to `/button` (`std_msgs/msg/Bool`). Wiring: button between `D28` and `GND`. `LOW` is `false`, `HIGH` is `true`, so a press is `data: false`. `D28` is a Mega and Due pin; the sketch still compiles on the other boards.
+
+This sketch does not call `ros.advertise`. It behaves like the light sensor: the first `publish` creates `/button`. The sample that creates the topic can be dropped, and the next sample 50 ms later is sent. Holding the button keeps sending the level.
+
+```cpp
+#include <RosDuino.h>
+#include <std_msgs/msg/Bool.h>
+
+const uint8_t kButtonPin = 28;
+
+std_msgs::Bool pressed;
+rosduino::Timer timer(50);   // every 50 ms
+
+void setup() {
+  pinMode(kButtonPin, INPUT);
+  ros.begin("button");
+}
+
+void loop() {
+  ros.update();
+  if (timer.check()) {
+    pressed.data = digitalRead(kButtonPin);
+    ros.publish("button", pressed);
+  }
+}
+```
+
+On the computer:
+
+```bash
+ros2 topic echo /button
+```
+
+### Simple/ButtonOnce — one message when the button changes
+
+The board reads `D28` every 50 ms. When the reading changes, it sends that value once to `/button`. Holding the button does not repeat the message. Wiring is the same as `Simple/ButtonSimple`.
+
+`ros.advertise("button", pressed)` in `setup()` is what makes a button reliable. The variable is not sent; it only tells the library that the topic is `std_msgs/msg/Bool`. The publisher is registered as soon as the agent connects, so `/button` is visible before anyone presses the button. The first change is then a normal message and is sent. Without `advertise`, `/button` would appear only with that first change, and the change itself would be dropped.
+
+```cpp
+#include <RosDuino.h>
+#include <std_msgs/msg/Bool.h>
+
+const uint8_t kButtonPin = 28;
+
+std_msgs::Bool pressed;
+bool was;
+rosduino::Timer timer(50);   // every 50 ms
+
+void setup() {
+  pinMode(kButtonPin, INPUT);
+  was = digitalRead(kButtonPin);
+  ros.begin("button");
+  ros.advertise("button", pressed);
+}
+
+void loop() {
+  ros.update();
+  if (timer.check()) {
+    pressed.data = digitalRead(kButtonPin);
+    if (pressed.data != was) {
+      was = pressed.data;
+      ros.publish("button", pressed);
+    }
+  }
+}
+```
+
+On the computer:
+
+```bash
+ros2 topic echo /button
+```
+
+What matters here:
+- `setup()` remembers the first reading, so a level that is already there is not sent.
+- Each later change sends one message. A press and a release are two changes.
+- `timer.check()` waits 50 ms between reads, so a short contact bounce does not become many messages.
+- Start `ros2 topic echo` before pressing. A message published while nobody is subscribed is not kept.
 
 ### Simple/LedService — turn the LED on by request (service on the board)
 
@@ -298,6 +381,41 @@ void loop() { node.spinOnce(); }
 ```
 
 On the computer: `ros2 topic pub --once /toggle_led std_msgs/msg/Empty "{}"`
+
+### Full/ButtonPub — the D28 button (full API)
+
+`Simple/ButtonSimple` with an explicit node and a publisher. `node.advertise(pub)` in `setup()` registers `/button` before the first reading, the same idea as `ros.advertise` in `Simple/ButtonOnce`. The sketch still publishes the level 20 times a second, so a sensor-style loop would also work with the first `publish` creating the topic.
+
+```cpp
+#include <RosDuino.h>
+#include <std_msgs/msg/Bool.h>
+
+const uint8_t kButtonPin = 28;
+
+rosduino::Node<> node;
+rosduino::Publisher<std_msgs::msg::Bool> pub;
+std_msgs::msg::Bool pressed;
+rosduino::Timer timer(50);   // every 50 ms
+
+void setup() {
+  pinMode(kButtonPin, INPUT);
+  node.begin(Serial, 115200, F("button"));
+  pub = rosduino::Publisher<std_msgs::msg::Bool>(F("button"));
+  node.advertise(pub);
+}
+
+void loop() {
+  node.spinOnce();
+  if (timer.check()) {
+    pressed.data = digitalRead(kButtonPin);
+    pub.publish(pressed);
+  }
+}
+```
+
+On the computer: `ros2 topic echo /button`
+
+Wiring is the same as `Simple/ButtonSimple`: button between `D28` and `GND`.
 
 ### Full/ServiceServer — a counter and a service
 
