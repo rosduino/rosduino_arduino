@@ -160,6 +160,8 @@ void loop() {
 ros2 topic echo /light
 ```
 
+A sensor like this does not need `ros.advertise`. The first `ros.publish` creates the topic, and the readings after it are sent. For a button, call `ros.advertise("button", pressed)` in `setup()`. Otherwise `/button` appears only with the first press, and that press is dropped. See `Simple/ButtonOnce`. `Simple/ButtonSimple` publishes the level 20 times a second and can skip `advertise`, like the light sensor.
+
 ### A service on the board
 
 ```cpp
@@ -205,10 +207,13 @@ On Micro, Mega, and Due the agent can sit on `Serial1` (through a USB-UART adapt
 |---|---|
 | `Simple/Led` | subscribe: the LED follows a ROS 2 command |
 | `Simple/LightSensor` | publish a sensor reading |
+| `Simple/ButtonSimple` | publish the D28 button level, 20 times a second |
+| `Simple/ButtonOnce` | one Bool when the D28 button changes; `advertise` in `setup()` |
 | `Simple/LedService` | a service on the board |
 | `Simple/AddServer`, `Simple/AddClient` | an add service on the board, and a call from the board |
 | `Simple/LedSerial1` | the agent on `Serial1`, `Serial` free for debug (Micro, Mega, Due) |
 | `Full/Blink`, `Full/PubSub` | the full API: separate publisher and subscriber objects |
+| `Full/ButtonPub` | the D28 button with a `Publisher` |
 | `Full/ServiceServer`, `Full/ServiceClient` | services in the full API |
 | `Full/TimeAndLog` | ROS 2 time and logs |
 | `Full/NanoBasic` | a small Nano robot: range, battery voltage, LED |

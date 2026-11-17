@@ -182,6 +182,8 @@ void loop() {
 ros2 topic echo /light
 ```
 
+Для такого датчика `ros.advertise` не нужен. Первый `ros.publish` создаёт топик, а следующие показания уже уходят. Для кнопки в `setup()` нужен `ros.advertise("button", pressed)`. Иначе `/button` появится только вместе с первым нажатием, и это нажатие потеряется. См. `Simple/ButtonOnce`. `Simple/ButtonSimple` шлёт уровень 20 раз в секунду и обходится без `advertise`, как датчик света.
+
 ### Сервис на плате
 
 ```cpp
@@ -232,10 +234,13 @@ ros.begin(Serial1, 57600, "led_board");   // Serial1, 57600
 |---|---|
 | `Simple/Led` | подписка: светодиод по команде из ROS 2 |
 | `Simple/LightSensor` | публикация показаний датчика |
+| `Simple/ButtonSimple` | уровень кнопки на D28, 20 раз в секунду |
+| `Simple/ButtonOnce` | одно сообщение, когда кнопка на D28 меняется; `advertise` в `setup()` |
 | `Simple/LedService` | сервис на плате |
 | `Simple/AddServer`, `Simple/AddClient` | сервис сложения: на плате и вызов с платы |
 | `Simple/LedSerial1` | агент на `Serial1`, `Serial` свободен для отладки (Micro, Mega, Due) |
 | `Full/Blink`, `Full/PubSub` | расширенный вариант API: отдельные объекты издателя и подписчика |
+| `Full/ButtonPub` | кнопка на D28 через объект `Publisher` |
 | `Full/ServiceServer`, `Full/ServiceClient` | сервисы в расширенном варианте API |
 | `Full/TimeAndLog` | время ROS 2 и вывод в журнал |
 | `Full/NanoBasic` | небольшой робот на Nano: дальномер, напряжение батареи, светодиод |

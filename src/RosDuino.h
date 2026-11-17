@@ -1124,6 +1124,23 @@ class Node {
     return Result::InvalidArgument;
   }
 
+  // The message argument is not published. Its type becomes the topic type.
+  template <typename T>
+  Result advertise(const char* topic, const T&) {
+    if (topic == nullptr) {
+      return Result::InvalidArgument;
+    }
+    return ensurePublisher<T>(core::StrView::fromCString(topic), nullptr);
+  }
+
+  template <typename T>
+  Result advertise(const __FlashStringHelper* topic, const T&) {
+    if (topic == nullptr) {
+      return Result::InvalidArgument;
+    }
+    return ensurePublisher<T>(detail::makeFlashStrView(topic), nullptr);
+  }
+
   template <typename T>
   Result publish(const char* topic, const T& msg) {
     if (topic == nullptr) {
@@ -1341,7 +1358,7 @@ class Node {
   }
 
   template <typename T>
-  Result publishSimple(const core::StrView& name, const T& msg) {
+  Result ensurePublisher(const core::StrView& name, uint8_t* out_id) {
     static_assert(T::maxSerializedSize() <= kMaxCdrTx,
                   "RosDuino: message maxSerializedSize() exceeds TX CDR budget "
                   "(frame size minus 8)");
@@ -1362,6 +1379,19 @@ class Node {
         logError("no entity slots");
         return Result::NoResources;
       }
+    }
+    if (out_id != nullptr) {
+      *out_id = id;
+    }
+    return Result::Ok;
+  }
+
+  template <typename T>
+  Result publishSimple(const core::StrView& name, const T& msg) {
+    uint8_t id = 0U;
+    const Result reg = ensurePublisher<T>(name, &id);
+    if (reg != Result::Ok) {
+      return reg;
     }
     if (!session_.connected()) {
       return Result::NotConnected;
